@@ -9,10 +9,10 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>com.yl</groupId>
-    <artifactId>myoj-code-sandbox</artifactId>
+    <artifactId>myOJ-code-sandbox</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>myoj-code-sandbox</name>
-    <description>myoj-code-sandbox</description>
+    <name>myOJ-code-sandbox</name>
+    <description>myOJ-code-sandbox</description>
     <properties>
         <java.version>1.8</java.version>
     </properties>

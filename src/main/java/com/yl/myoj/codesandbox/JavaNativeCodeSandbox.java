@@ -1,21 +1,17 @@
 package com.yl.myoj.codesandbox;
 
-import cn.hutool.core.date.StopWatch;
+
 import cn.hutool.core.io.FileUtil;
-import cn.hutool.core.io.resource.Resource;
 import cn.hutool.core.io.resource.ResourceUtil;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.dfa.FoundWord;
+import cn.hutool.dfa.WordTree;
 import com.yl.myoj.codesandbox.model.ExecuteCodeRequest;
 import com.yl.myoj.codesandbox.model.ExecuteCodeResponse;
 import com.yl.myoj.codesandbox.model.ExecuteMessage;
 import com.yl.myoj.codesandbox.model.JudgeInfo;
 import com.yl.myoj.codesandbox.utils.ProcessUtils;
-import org.apache.coyote.http11.filters.IdentityOutputFilter;
-
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.IOException;
-import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
@@ -27,6 +23,19 @@ public class JavaNativeCodeSandbox implements CodeSandbox {
 
     private static final String GLOBAL_CODE_DIR_NAME = "tmpCode";
     private static final String GLOBAL_JAVA_CLASS_NAME = "Main.java";
+    private static final long TIME_OUT = 5000L;
+
+    private static  final List<String> blackList = Arrays.asList("Files","exec");//代码黑名单
+
+    private static final WordTree WORD_TREE;
+
+    static {
+        //字典树初始化
+        WORD_TREE = new WordTree();
+        WORD_TREE.addWords(blackList);
+    }
+
+
 
     public static void main(String[] args) {
         JavaNativeCodeSandbox javaNativeCodeSandbox = new JavaNativeCodeSandbox();
@@ -43,13 +52,21 @@ public class JavaNativeCodeSandbox implements CodeSandbox {
 
     @Override
     public ExecuteCodeResponse executeCode(ExecuteCodeRequest executeCodeRequest) {
+//        System.setSecurityManager(new DenySecurityManager());
         String code = executeCodeRequest.getCode();
         List<String> inputList = executeCodeRequest.getInputList();
         String language = executeCodeRequest.getLanguage();
 
+        //校验代码是否恶意
+        FoundWord foundWord = WORD_TREE.matchWord(code);
+        if (foundWord!=null){
+            System.out.println("包含禁止词："+foundWord.getFoundWord());
+        }
+
+
+        //1)判断全局代码目录是否存在,没有则新建
         String userDir = System.getProperty("user.dir");
         String globalCodePathName = userDir + File.separator + GLOBAL_CODE_DIR_NAME;
-        //1)判断全局代码目录是否存在,没有则新建
         if (!FileUtil.exist(globalCodePathName)) {
             FileUtil.mkdir(globalCodePathName);
         }
@@ -73,13 +90,21 @@ public class JavaNativeCodeSandbox implements CodeSandbox {
         //4)执行代码,获得所有的输出信息
         List<ExecuteMessage> executeMessageList =new ArrayList<>();
         for (String inputArgs :inputList) {
-
-            String runCmd = String.format("java -Dfile.encoding=UTF-8 -cp %s Main %s",userCodeParentPath,inputArgs);
+            //-Xmx256m 限制初始堆空间大小
+            String runCmd = String.format("java -Xmx256m -Dfile.encoding=UTF-8 -cp %s Main %s",userCodeParentPath,inputArgs);
             try{
-                Process process = Runtime.getRuntime().exec(runCmd);
+                Process runProcess = Runtime.getRuntime().exec(runCmd);
+                new Thread(()->{
+                    try {
+                        Thread.sleep(TIME_OUT);
+                        runProcess.destroy();//限制执行的时间
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                }).start();
                 String opName = "运行";
                 //ExecuteMessage executeMessage = ProcessUtils.runInterProcessAndGetMessage(process, opName,inputArgs);交互式执行
-                ExecuteMessage executeMessage = ProcessUtils.runProcessAndGetMessage(process, opName);
+                ExecuteMessage executeMessage = ProcessUtils.runProcessAndGetMessage(runProcess, opName);
                 executeMessageList.add(executeMessage);
             }catch (Exception e){
                 return getErrorResponse(e);
@@ -104,8 +129,6 @@ public class JavaNativeCodeSandbox implements CodeSandbox {
                 maxTime =Math.max(maxTime,time);
             }
         }
-
-
         if (outPutList.size()==executeMessageList.size()){
             executeCodeResponse.setStatus(1);//没有错误输出
         }
