@@ -16,6 +16,7 @@ import com.yl.myoj.codesandbox.model.ExecuteMessage;
 import com.yl.myoj.codesandbox.model.JudgeInfo;
 import com.yl.myoj.codesandbox.utils.ProcessUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 
 import java.io.Closeable;
 import java.io.File;

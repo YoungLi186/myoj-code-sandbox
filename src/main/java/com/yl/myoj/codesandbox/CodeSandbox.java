@@ -9,6 +9,11 @@ import com.yl.myoj.codesandbox.model.ExecuteCodeResponse;
  */
 public interface CodeSandbox {
 
+    /**
+     * 代码沙箱执行方法
+     * @param executeCodeRequest
+     * @return
+     */
     ExecuteCodeResponse executeCode(ExecuteCodeRequest executeCodeRequest);
 
 

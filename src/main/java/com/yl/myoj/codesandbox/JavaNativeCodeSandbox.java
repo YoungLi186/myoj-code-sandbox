@@ -5,6 +5,7 @@ import com.yl.myoj.codesandbox.model.ExecuteCodeRequest;
 import com.yl.myoj.codesandbox.model.ExecuteCodeResponse;
 import com.yl.myoj.codesandbox.model.ExecuteMessage;
 import com.yl.myoj.codesandbox.utils.ProcessUtils;
+import org.springframework.stereotype.Component;
 
 import java.io.File;
 import java.io.IOException;
@@ -15,6 +16,7 @@ import java.util.UUID;
 /**
  * 原生实现，重写部分方法即可
  */
+@Component
 public class JavaNativeCodeSandbox extends JavaCodeSandboxTemplate {
     private static final long TIME_OUT = 5000L;
 
